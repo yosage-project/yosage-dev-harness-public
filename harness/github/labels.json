@@ -1,0 +1,13 @@
+[
+  { "name": "feat",     "color": "0e8a16", "description": "新機能 (branch/commit: feat)" },
+  { "name": "fix",      "color": "d73a4a", "description": "バグ修正 (branch/commit: fix)" },
+  { "name": "refactor", "color": "1d76db", "description": "挙動を変えない構造改善 (refactor)" },
+  { "name": "chore",    "color": "bfbfbf", "description": "雑務: 依存/CI/設定/ビルド (chore)" },
+  { "name": "docs",     "color": "0075ca", "description": "ドキュメント (docs)" },
+  { "name": "test",     "color": "5319e7", "description": "テストの追加・修正 (test)" },
+  { "name": "perf",     "color": "fbca04", "description": "パフォーマンス改善 (perf)" },
+
+  { "name": "epic",     "color": "6f42c1", "description": "複数 Sub-issue を束ねる親 Issue" },
+
+  { "name": "pending",  "color": "d4c5f9", "description": "着手保留: 判断済みだが優先度を下げて寝かせている" }
+]

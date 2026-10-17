@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "yosage-dev-harness 設定",
+  "description": "導入先ごとの設定(.claude/yosage-dev-harness.local.json)。書くのは利用者が既定値から変えた項目だけ(このファイルの default は harness/config/defaults.json と一致する)。",
+  "type": "object",
+  "properties": {
+    "workspace": {
+      "type": "boolean",
+      "default": false,
+      "description": "複数リポジトリが同居するワークスペースの直下かどうか。"
+    },
+    "knowledge": {
+      "type": "object",
+      "description": "グローバル知識ストアの同期設定。",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "同期を有効にするか(opt-in)。"
+        },
+        "source": {
+          "type": "string",
+          "default": "",
+          "description": "グローバル知識ストア(独立リポジトリ)。git clone/fetch できる URL。"
+        },
+        "ref": {
+          "type": "string",
+          "default": "main",
+          "description": "取得する ref(ブランチ/タグ)。"
+        }
+      }
+    },
+    "notify": {
+      "type": "object",
+      "description": "Discord/Slack へのフラット通知(Notification/Stop/SubagentStop フック)の設定。",
+      "properties": {
+        "url": {
+          "type": "string",
+          "default": "",
+          "writeOnly": true,
+          "description": "webhook URL。秘密。未設定なら無音(opt-in by URL)。"
+        },
+        "provider": {
+          "type": "string",
+          "default": "",
+          "description": "slack | discord。未指定なら URL のホスト名から判別する。"
+        },
+        "on_notification": {
+          "type": "boolean",
+          "default": true,
+          "description": "Notification イベントで通知するか。"
+        },
+        "on_stop": {
+          "type": "boolean",
+          "default": true,
+          "description": "Stop イベントで通知するか。"
+        },
+        "on_subagent_stop": {
+          "type": "boolean",
+          "default": true,
+          "description": "SubagentStop イベントで通知するか。"
+        }
+      }
+    }
+  }
+}

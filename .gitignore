@@ -1,0 +1,15 @@
+# OS / editor
+.DS_Store
+*.swp
+Thumbs.db
+
+# Claude Code: ローカル(プロジェクト個別)設定は配布物の対象外
+**/settings.local.json
+*.bak
+
+# このリポジトリ自身も開発用マーケットプレイス(.claude-plugin/marketplace.json)経由でプラグインを
+# 有効にしており、.claude/ にはセッションの実行時状態(knowledge の project-local ストア・
+# worktree・一時領域 .claude/tmp/ 等)が入る。正本は harness/ payload であり .claude/ は丸ごと
+# 追跡しない(knowledge エントリ等の実験結果を残したい場合は harness/ payload 側や
+# .claude/knowledge の外へ蒸留してから記録する)。
+/.claude/*

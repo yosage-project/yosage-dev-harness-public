@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# yosage-dev-harness-knowledge-store-check — lib/knowledge-store-check.sh の入口(名前で呼ぶ。パスを書かない)
+exec bash "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/knowledge-store-check.sh" "$@"

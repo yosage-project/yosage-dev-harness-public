@@ -1,0 +1,6 @@
+{
+  "name": "yosage-dev-harness",
+  "description": "開発領域(実装ルーティング・PR ループ・knowledge loop 等)のワークフローを Claude Code に統合するハーネス",
+  "version": "0.3.0",
+  "author": { "name": "yosage-project" }
+}

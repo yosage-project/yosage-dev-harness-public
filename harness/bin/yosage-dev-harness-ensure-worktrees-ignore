@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# yosage-dev-harness-ensure-worktrees-ignore — .claude/worktrees/.gitignore だけを確認/作成/書き換える。
+#   使い方: yosage-dev-harness-ensure-worktrees-ignore <repo-root>
+#   別リポジトリ(ワークスペースのメンバー等)へ git worktree add する手順の前に、対象リポジトリの
+#   ルートを引数で受け取って呼ぶ(cwd から自己解決する setup/update/status とは違い、対象は常に
+#   引数で明示する)。
+set -uo pipefail
+
+_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../lib/setup.sh
+. "$_dir/lib/setup.sh"
+
+root="${1:-}"
+if [ -z "$root" ] || [ ! -d "$root" ]; then
+  echo "使い方: yosage-dev-harness-ensure-worktrees-ignore <repo-root>" >&2
+  exit 2
+fi
+
+out="$(ydh_worktrees_ignore_ensure "$root")"
+if [ -n "$out" ]; then
+  while IFS=$'\t' read -r state text; do
+    [ -n "$state" ] || continue
+    case "$state" in
+      created) echo "作成しました: $text" ;;
+      rewritten) echo "書き換えました: $text" ;;
+      tracked) echo "追跡されている .claude/worktrees/.gitignore があります(移行で外してください): $text" ;;
+    esac
+  done <<< "$out"
+fi
+exit 0

@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# yosage-dev-harness-update — setup の手順2〜5(設定ファイルは作らない・項目も書き足さない)。
+#   使い方: yosage-dev-harness-update
+#   分岐: git リポジトリの外 → exit 2 / jq も python3 も無い → exit 3(何も書かない) /
+#         設定ファイルが壊れた JSON → exit 4(何も書かない)
+set -uo pipefail
+
+_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../lib/config.sh
+. "$_dir/lib/config.sh"
+# shellcheck source=../lib/setup.sh
+. "$_dir/lib/setup.sh"
+
+if [ "$#" -gt 0 ]; then
+  echo "使い方: yosage-dev-harness-update" >&2
+  exit 2
+fi
+
+root="$(ydh_repo_root)" || { echo "update: git リポジトリの外です" >&2; exit 2; }
+command -v jq >/dev/null 2>&1 || command -v python3 >/dev/null 2>&1 || { echo "update: jq も python3 もありません(何も書き込みません)" >&2; exit 3; }
+
+cfg="$(ydh_config_path "$root")"
+if [ -f "$cfg" ]; then
+  _ydh_json_is_valid "$cfg" || { echo "update: 設定ファイルが壊れた JSON です(何も書き込みません): $cfg" >&2; exit 4; }
+fi
+
+# 2. .gitignore の不足行 / 打ち消しの行
+echo "-- .gitignore --"
+gi_out="$(ydh_gitignore_apply "$root")"
+if [ -n "$gi_out" ]; then
+  while IFS=$'\t' read -r state text; do
+    [ -n "$state" ] || continue
+    case "$state" in
+      added) echo "追加しました: $text" ;;
+      negated) echo "利用者が明示的に外しています(追加しません): $text" ;;
+    esac
+  done <<< "$gi_out"
+else
+  echo "変更なし(既に足りています)"
+fi
+
+# 3. .claude/worktrees/.gitignore(workspace true なら各メンバーにも)
+echo "-- .claude/worktrees/.gitignore --"
+wt_out="$(ydh_worktrees_ignore_ensure "$root")"
+if [ -n "$wt_out" ]; then
+  while IFS=$'\t' read -r state text; do
+    [ -n "$state" ] || continue
+    case "$state" in
+      created) echo "作成しました: $text" ;;
+      rewritten) echo "書き換えました: $text" ;;
+      tracked) echo "追跡されている .claude/worktrees/.gitignore があります(移行で外してください): $text" ;;
+    esac
+  done <<< "$wt_out"
+else
+  echo "変更なし"
+fi
+cur_ws="$(ydh_config_get "$root" workspace 2>/dev/null || true)"
+if [ "$cur_ws" = "true" ]; then
+  while IFS= read -r member; do
+    [ -n "$member" ] || continue
+    m_out="$(ydh_worktrees_ignore_ensure "$member")"
+    if [ -n "$m_out" ]; then
+      while IFS=$'\t' read -r state text; do
+        [ -n "$state" ] || continue
+        case "$state" in
+          created) echo "作成しました: $member/$text" ;;
+          rewritten) echo "書き換えました: $member/$text" ;;
+          tracked) echo "追跡されている .claude/worktrees/.gitignore があります(移行で外してください): $member/$text" ;;
+        esac
+      done <<< "$m_out"
+    fi
+  done <<< "$(ydh_workspace_members "$root")"
+fi
+
+# 4. 推奨設定の見本(丸ごと置き換え)
+echo "-- 推奨設定の見本 --"
+if ydh_recommended_settings_put "$root"; then
+  echo "書きました: $(ydh_recommended_settings_path "$root")"
+else
+  echo "update: 推奨設定の見本の書き込みに失敗しました" >&2
+  exit 1
+fi
+
+# 5. 使われなくなった項目
+unknown="$(ydh_config_unknown_keys "$root" 2>/dev/null || true)"
+if [ -n "$unknown" ]; then
+  echo "-- スキーマに無い項目(使われなくなった可能性があります) --"
+  printf '%s\n' "$unknown"
+fi
+
+exit 0

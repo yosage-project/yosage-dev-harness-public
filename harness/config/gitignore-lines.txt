@@ -1,0 +1,8 @@
+/.claude/yosage-dev-harness.local.json
+/.claude/knowledge/global/
+/.claude/knowledge/.global.tmp*
+/.claude/knowledge/.global.old/
+/.claude/knowledge/.global-sync
+/.claude/knowledge/.sync-log
+/.claude/review/criteria.md
+/.claude/tmp/

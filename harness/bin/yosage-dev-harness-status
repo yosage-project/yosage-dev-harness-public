@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# yosage-dev-harness-status — 既定値と今の値を並べて見せる(書き込まない)。
+#   使い方: yosage-dev-harness-status
+#   分岐: git リポジトリの外 → exit 2 / jq も python3 も無い → exit 3
+set -uo pipefail
+
+_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../lib/config.sh
+. "$_dir/lib/config.sh"
+# shellcheck source=../lib/setup.sh
+. "$_dir/lib/setup.sh"
+
+if [ "$#" -gt 0 ]; then
+  echo "使い方: yosage-dev-harness-status" >&2
+  exit 2
+fi
+
+root="$(ydh_repo_root)" || { echo "status: git リポジトリの外です" >&2; exit 2; }
+command -v jq >/dev/null 2>&1 || command -v python3 >/dev/null 2>&1 || { echo "status: jq も python3 もありません" >&2; exit 3; }
+
+cfg="$(ydh_config_path "$root")"
+cfg_broken=""
+if [ -f "$cfg" ]; then
+  _ydh_json_is_valid "$cfg" || cfg_broken=1
+fi
+
+echo "== 設定 =="
+if [ -n "$cfg_broken" ]; then
+  echo "設定ファイルが壊れた JSON です(値の表示をスキップします): $cfg"
+else
+  printf '%-28s %-10s %s\n' "項目" "既定値" "今の値"
+  while IFS= read -r key; do
+    [ -n "$key" ] || continue
+    # 「既定値」列そのものが欲しいので defaults.json を直接読む
+    # (ydh_config_get はファイル > 既定値の優先順で読むため、今の値の列に使う)。
+    default_val="$(_ydh_json_dotted_get "$(ydh_defaults_path)" "$key")"
+    if ydh_config_is_secret "$key"; then
+      if [ -f "$cfg" ] && _ydh_json_dotted_has "$cfg" "$key"; then
+        cur_val="設定あり"
+      else
+        cur_val="設定なし"
+      fi
+    else
+      if [ -f "$cfg" ] && _ydh_json_dotted_has "$cfg" "$key"; then
+        cur_val="$(ydh_config_get "$root" "$key" 2>/dev/null)"
+      else
+        cur_val="(既定)"
+      fi
+    fi
+    printf '%-28s %-10s %s\n' "$key" "$default_val" "$cur_val"
+  done <<< "$(ydh_config_schema_keys)"
+fi
+
+echo
+echo "== .gitignore =="
+gi_out="$(ydh_gitignore_plan "$root")"
+if [ -n "$gi_out" ]; then
+  while IFS=$'\t' read -r state text; do
+    [ -n "$state" ] || continue
+    case "$state" in
+      missing) echo "不足: $text" ;;
+      negated) echo "利用者が明示的に外している: $text" ;;
+      covered) : ;;
+    esac
+  done <<< "$gi_out"
+fi
+# here-string(パイプではなく単純なリダイレクト)で渡す。`printf ... | grep -qE` という
+# 素朴なパイプだと、`grep -q` は一致した時点で読み込みを打ち切るため、`printf` 側がまだ
+# 書き込み中だと SIGPIPE(終了コード141)で終了しうる。set -o pipefail 下ではこの141が
+# パイプライン全体の終了コードになり、実際には一致していたのに「不一致」として扱ってしまう
+# (高負荷でタイミングがずれると顕在化するレース)。
+# here-string はパイプラインの一員ではない: `<<<` の中身を書き込むのはコマンド起動前の
+# シェル自身であり、`grep` を fork/exec する時点で書き込みは既に完了している。SIGPIPE を
+# 受けうる別プロセスの書き手が存在しないため、この種のレースが構造的に起きない(パイプが
+# 実ファイルを経由するかどうかというシェル実装の詳細には依らない)。
+if ! grep -qE '^(missing|negated)' <<< "$gi_out"; then
+  echo "不足なし"
+fi
+
+echo
+echo "== .claude/worktrees/.gitignore =="
+wt_gi="$(ydh_worktrees_ignore_path "$root")"
+if [ ! -f "$wt_gi" ]; then
+  echo "無い(setup/update で作成されます)"
+else
+  content="$(cat "$wt_gi")"
+  stripped="${content%$'\r'}"
+  if [ "$stripped" = "*" ]; then
+    echo "OK(* のみ)"
+  elif git -C "$root" ls-files --error-unmatch .claude/worktrees/.gitignore >/dev/null 2>&1; then
+    echo "追跡されている .claude/worktrees/.gitignore があります(移行で外してください)"
+  else
+    echo "中身が * ではありません(update で書き換えられます)"
+  fi
+fi
+
+echo
+echo "== 推奨設定の見本 =="
+rs_path="$(ydh_recommended_settings_path "$root")"
+if [ ! -f "$rs_path" ]; then
+  echo "無い(setup/update で作成されます)"
+else
+  rendered="$(ydh_recommended_settings_render)"
+  current="$(cat "$rs_path")"
+  if [ "$rendered" = "$current" ]; then
+    echo "プラグインの版と一致しています"
+  else
+    echo "プラグインの版とずれています(update で置き換えられます)"
+  fi
+fi
+
+if [ ! -f "$cfg" ] || [ -n "$cfg_broken" ]; then
+  :
+else
+  unknown="$(ydh_config_unknown_keys "$root" 2>/dev/null || true)"
+  if [ -n "$unknown" ]; then
+    echo
+    echo "== スキーマに無い項目(使われなくなった可能性があります) =="
+    printf '%s\n' "$unknown"
+  fi
+fi
+
+exit 0

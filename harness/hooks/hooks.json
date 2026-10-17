@@ -1,0 +1,421 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh"
+            ]
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh"
+            ]
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh"
+            ]
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/format.sh"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/grounding-check.sh"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/knowledge-index.sh"
+            ]
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/commit-trailer-notice.sh"
+            ]
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/knowledge-sync.sh"
+            ]
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "agent-watchdog"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "change-lanes"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "commit"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "design-routing"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "doc-placement"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "grounding-labels"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "implement-routing"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "issue-discipline"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "knowledge"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "naming"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "pr-loop"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "project-profile"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "sensitive-data"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "visual-design-routing"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SessionStart",
+              "worktree-placement"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-check.sh"
+            ]
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/notify.sh"
+            ]
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/notify.sh"
+            ]
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/notify.sh"
+            ]
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "agent-watchdog"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "change-lanes"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "commit"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "design-routing"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "doc-placement"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "grounding-labels"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "implement-routing"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "issue-discipline"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "knowledge"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "naming"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "pr-loop"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "project-profile"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "sensitive-data"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "visual-design-routing"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject-rule.sh",
+              "SubagentStart",
+              "worktree-placement"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

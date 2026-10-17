@@ -1,0 +1,14 @@
+{
+  "name": "yosage-dev-harness",
+  "description": "Claude Code のプラグイン yosage-dev-harness を配るマーケットプレイス",
+  "owner": {
+    "name": "yosage-project"
+  },
+  "plugins": [
+    {
+      "name": "yosage-dev-harness",
+      "source": "./harness",
+      "description": "開発領域(実装ルーティング・PR ループ・knowledge loop 等)のワークフローを Claude Code に統合するハーネス"
+    }
+  ]
+}

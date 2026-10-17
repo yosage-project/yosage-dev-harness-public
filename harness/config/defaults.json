@@ -1,0 +1,5 @@
+{
+  "workspace": false,
+  "knowledge": { "enabled": false, "source": "", "ref": "main" },
+  "notify": { "url": "", "provider": "", "on_notification": true, "on_stop": true, "on_subagent_stop": true }
+}

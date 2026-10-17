@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# yosage-dev-harness-setup — 導入先に守りに必要な最小のものだけを書き込む。
+#   使い方: yosage-dev-harness-setup [--workspace true|false]
+#   分岐: git リポジトリの外 → exit 2 / jq も python3 も無い → exit 3(何も書かない) /
+#         設定ファイルが壊れた JSON → exit 4(何も書かない)
+set -uo pipefail
+
+_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=../lib/config.sh
+. "$_dir/lib/config.sh"
+# shellcheck source=../lib/setup.sh
+. "$_dir/lib/setup.sh"
+
+usage() { echo "使い方: yosage-dev-harness-setup [--workspace true|false]" >&2; }
+
+ws_arg=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --workspace)
+      ws_arg="${2:-}"
+      case "$ws_arg" in
+        true|false) ;;
+        *) usage; exit 2 ;;
+      esac
+      shift 2
+      ;;
+    *) usage; exit 2 ;;
+  esac
+done
+
+root="$(ydh_repo_root)" || { echo "setup: git リポジトリの外です" >&2; exit 2; }
+command -v jq >/dev/null 2>&1 || command -v python3 >/dev/null 2>&1 || { echo "setup: jq も python3 もありません(何も書き込みません)" >&2; exit 3; }
+
+cfg="$(ydh_config_path "$root")"
+if [ -f "$cfg" ]; then
+  _ydh_json_is_valid "$cfg" || { echo "setup: 設定ファイルが壊れた JSON です(何も書き込みません): $cfg" >&2; exit 4; }
+fi
+
+# 1. 設定ファイル(無ければ作る。あれば --workspace が渡されたときだけ書き換える)
+had_cfg=""
+[ -f "$cfg" ] && had_cfg=1
+ydh_config_init "$root" "$YDH_SCHEMA_URL" "$ws_arg" || { echo "setup: 設定ファイルの作成に失敗しました" >&2; exit 1; }
+if [ -n "$had_cfg" ] && [ -n "$ws_arg" ]; then
+  ydh_config_set_workspace "$root" "$ws_arg" || { echo "setup: workspace の更新に失敗しました" >&2; exit 1; }
+fi
+if [ -z "$had_cfg" ]; then
+  echo "設定ファイルを作成しました: $cfg"
+elif [ -n "$ws_arg" ]; then
+  echo "設定ファイルの workspace を更新しました: $cfg"
+fi
+
+# 2. .gitignore の不足行 / 打ち消しの行
+echo "-- .gitignore --"
+gi_out="$(ydh_gitignore_apply "$root")"
+if [ -n "$gi_out" ]; then
+  while IFS=$'\t' read -r state text; do
+    [ -n "$state" ] || continue
+    case "$state" in
+      added) echo "追加しました: $text" ;;
+      negated) echo "利用者が明示的に外しています(追加しません): $text" ;;
+    esac
+  done <<< "$gi_out"
+else
+  echo "変更なし(既に足りています)"
+fi
+
+# 3. .claude/worktrees/.gitignore(workspace true なら各メンバーにも)
+echo "-- .claude/worktrees/.gitignore --"
+wt_out="$(ydh_worktrees_ignore_ensure "$root")"
+if [ -n "$wt_out" ]; then
+  while IFS=$'\t' read -r state text; do
+    [ -n "$state" ] || continue
+    case "$state" in
+      created) echo "作成しました: $text" ;;
+      rewritten) echo "書き換えました: $text" ;;
+      tracked) echo "追跡されている .claude/worktrees/.gitignore があります(移行で外してください): $text" ;;
+    esac
+  done <<< "$wt_out"
+else
+  echo "変更なし"
+fi
+cur_ws="$(ydh_config_get "$root" workspace 2>/dev/null || true)"
+if [ "$cur_ws" = "true" ]; then
+  while IFS= read -r member; do
+    [ -n "$member" ] || continue
+    m_out="$(ydh_worktrees_ignore_ensure "$member")"
+    if [ -n "$m_out" ]; then
+      while IFS=$'\t' read -r state text; do
+        [ -n "$state" ] || continue
+        case "$state" in
+          created) echo "作成しました: $member/$text" ;;
+          rewritten) echo "書き換えました: $member/$text" ;;
+          tracked) echo "追跡されている .claude/worktrees/.gitignore があります(移行で外してください): $member/$text" ;;
+        esac
+      done <<< "$m_out"
+    fi
+  done <<< "$(ydh_workspace_members "$root")"
+fi
+
+# 4. 推奨設定の見本
+echo "-- 推奨設定の見本 --"
+if ydh_recommended_settings_put "$root"; then
+  echo "書きました: $(ydh_recommended_settings_path "$root")"
+else
+  echo "setup: 推奨設定の見本の書き込みに失敗しました" >&2
+  exit 1
+fi
+
+# 5. 使われなくなった項目
+unknown="$(ydh_config_unknown_keys "$root" 2>/dev/null || true)"
+if [ -n "$unknown" ]; then
+  echo "-- スキーマに無い項目(使われなくなった可能性があります) --"
+  printf '%s\n' "$unknown"
+fi
+
+# 6. ワークスペースの推定(提案のみ・書き込まない)
+if ! _ydh_json_dotted_has "$cfg" workspace 2>/dev/null; then
+  member_count="$(ydh_workspace_members "$root" | wc -l | tr -d ' ')"
+  if [ "${member_count:-0}" -ge 2 ]; then
+    echo "-- ワークスペースの推定 --"
+    echo "直下に git リポジトリが複数あります。workspace: true を提案します(yosage-dev-harness-setup --workspace true)。"
+  fi
+fi
+
+# 7. 共有ストアの案内(知識の同期が有効でないときだけ・案内のみで書き込まない)
+kn_enabled="$(ydh_config_get "$root" knowledge.enabled 2>/dev/null || true)"
+if [ "$kn_enabled" != "true" ]; then
+  echo "-- 知見の共有(案内) --"
+  echo "チームや組織で知見を共有するなら、共有ストアを公開のテンプレートリポジトリ yosage-dev-knowledge-template(GitHub の「Use this template」)から作り、"
+  echo "設定ファイル .claude/yosage-dev-harness.local.json の knowledge.enabled を true、knowledge.source をそのストアの URL にしてください(setup は書き込みません)。"
+  echo "詳しくは docs/knowledge.md の「共有ストアを設定する」を見てください。"
+fi
+
+exit 0
